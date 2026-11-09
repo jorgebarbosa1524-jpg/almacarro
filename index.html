@@ -1,0 +1,1109 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Alma do Carro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: painel de cabine. Instrumentos à esquerda, a alma do carro (olhos, voz e conversa) à direita; empilha no celular. */
+:root{
+  --bg:#0b0e0c;
+  --panel:#121712;
+  --panel-2:#192019;
+  --line:#26302a;
+  --fg:#e7ece3;
+  --muted:#8c988d;
+  --accent:#ff8a1f;
+  --accent-ink:#1c0e00;
+  --ok:#58d08a;
+  --ok-ink:#06210f;
+  --warn:#f2e24a;
+  --crit:#ff5d4d;
+  --cold:#68b4ff;
+  --f-display:'Saira Condensed','Arial Narrow',sans-serif;
+  --f-body:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'Share Tech Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-block:14px 22px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.app{max-width:1240px;margin:0 auto;display:grid;gap:14px}
+h1,h2,p{margin:0}
+button,input,select{font:inherit;color:inherit}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+
+/* barra superior */
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:46px;height:28px;flex:none;fill:var(--accent);filter:drop-shadow(0 0 6px rgba(255,138,31,.6))}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:.14em;text-transform:uppercase;line-height:1;overflow-wrap:anywhere}
+.brand p{color:var(--muted);font-size:13px;letter-spacing:.04em;margin-top:3px}
+.bar-right{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase}
+.pill i{width:9px;height:9px;border-radius:50%;background:var(--warn)}
+.pill[data-state="obd"] i{background:var(--ok)}
+.btn{min-height:44px;padding:9px 16px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;cursor:pointer;font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.07em;text-transform:uppercase}
+.btn:hover{border-color:var(--muted)}
+.btn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn[disabled]{opacity:.5;cursor:default}
+.notice{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--accent);border-radius:8px;background:var(--panel-2);color:var(--fg);font-size:15px;box-shadow:0 6px 24px rgba(0,0,0,.6);max-width:640px;margin:0 auto}
+.notice span{flex:1;min-width:0;overflow-wrap:anywhere}
+.notice button{flex:none;min-height:36px;min-width:36px;padding:0 10px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;font-family:var(--f-display);font-weight:700;font-size:15px;letter-spacing:.06em;cursor:pointer}
+
+/* cabine */
+.cockpit{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}
+.instr{display:grid;gap:14px;min-width:0}
+.cluster{padding:12px 12px 6px}
+#gauge{display:block;width:100%;max-width:440px;margin:0 auto;height:auto}
+.g-track{fill:none;stroke:var(--line);stroke-width:14;stroke-linecap:butt}
+.g-red{fill:none;stroke:var(--crit);stroke-width:14;opacity:.35}
+.g-val{fill:none;stroke:var(--accent);stroke-width:14;stroke-linecap:butt}
+.g-val[data-hot="true"]{stroke:var(--crit)}
+.g-tick{stroke:var(--muted);stroke-width:1.5}
+.g-tick.minor{opacity:.45}
+.g-lab{font-family:var(--f-display);font-size:15px;font-weight:600;fill:var(--muted);text-anchor:middle;dominant-baseline:middle}
+.g-cap{font-family:var(--f-display);font-size:13px;letter-spacing:.14em;fill:var(--muted);text-anchor:middle;text-transform:uppercase}
+.g-speed{font-family:var(--f-display);font-size:74px;font-weight:700;fill:var(--fg);text-anchor:middle;font-variant-numeric:tabular-nums}
+.g-unit{font-family:var(--f-display);font-size:17px;letter-spacing:.16em;fill:var(--muted);text-anchor:middle}
+.g-rpm{font-family:var(--f-mono);font-size:17px;fill:var(--accent);text-anchor:middle}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:8px;min-width:0}
+.t-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.t-label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.t-state{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.t-val{display:flex;align-items:baseline;gap:6px}
+.t-val b{font-family:var(--f-display);font-weight:700;font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.t-val span{color:var(--muted);font-size:15px}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--muted);transition:width .25s linear}
+.tile[data-state="ok"] .t-state,.tile[data-state="ok"] .meter i{color:var(--ok);background-color:var(--ok)}
+.tile[data-state="warn"] .t-state,.tile[data-state="warn"] .meter i{color:var(--warn);background-color:var(--warn)}
+.tile[data-state="crit"] .t-state,.tile[data-state="crit"] .meter i{color:var(--crit);background-color:var(--crit)}
+.tile[data-state="cold"] .t-state,.tile[data-state="cold"] .meter i{color:var(--cold);background-color:var(--cold)}
+.tile[data-state="idle"] .t-state{color:var(--muted)}
+.t-state{background:none!important}
+
+.sim{padding:14px;display:grid;gap:10px}
+.sim h2,.set h2{font-family:var(--f-display);font-size:17px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.sim p.sub{color:var(--muted);font-size:14px}
+.sim-btns{display:flex;flex-wrap:wrap;gap:8px}
+
+/* alma */
+.soul{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.soul-head{display:grid;gap:10px;padding:14px;background:#070907;border:1px solid var(--line);border-radius:8px}
+.optic svg{display:block;width:100%;max-width:300px;height:auto;margin:0 auto}
+.optic .eye{fill:var(--accent);opacity:.16;transition:opacity .3s;filter:drop-shadow(0 0 9px rgba(255,138,31,.75))}
+.optic[data-awake="true"] .eye{opacity:.85;animation:breathe 3.4s ease-in-out infinite}
+.optic[data-speaking="true"] .eye{opacity:1;animation:talk .38s ease-in-out infinite alternate}
+@keyframes breathe{0%,100%{opacity:.7}50%{opacity:.95}}
+@keyframes talk{from{opacity:.65}to{opacity:1}}
+.name-tag{text-align:center;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+.wave{display:flex;align-items:center;justify-content:center;gap:4px;height:26px}
+.wave span{width:4px;height:4px;border-radius:2px;background:var(--accent);opacity:.45}
+.optic[data-speaking="true"]~.wave span{opacity:1;animation:bar .55s ease-in-out infinite alternate;animation-delay:calc(var(--i) * -63ms)}
+.optic[data-speaking="true"]~.wave span:nth-child(3n){animation-duration:.4s}
+.optic[data-speaking="true"]~.wave span:nth-child(4n){animation-duration:.7s}
+@keyframes bar{from{height:4px}to{height:24px}}
+
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;min-height:170px;max-height:320px;overflow-y:auto}
+.msg{display:grid;gap:2px;min-width:0}
+.who{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.msg p{overflow-wrap:anywhere}
+.msg.soul p{font-size:18px;line-height:1.4}
+.msg.soul .who{color:var(--accent)}
+.msg.me{text-align:right}
+.msg.me p{color:var(--muted);font-size:15px}
+.msg.think p{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:7px 13px;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;cursor:pointer;font-size:14px}
+.chip:hover{border-color:var(--muted)}
+.say{display:flex;flex-wrap:wrap;gap:8px}
+.say input{flex:1 1 180px;min-width:0;min-height:46px;padding:9px 12px;background:var(--bg);border:1px solid var(--line);border-radius:6px}
+.say input::placeholder{color:var(--muted)}
+#mic[data-on="true"]{background:var(--ok);border-color:var(--ok);color:var(--ok-ink)}
+.hint{font-size:13px;color:var(--muted)}
+
+/* scanner de falhas */
+.dtc{padding:14px;display:grid;gap:10px}
+.dtc h2{font-family:var(--f-display);font-size:17px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.dtc ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.dtc li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;align-items:baseline}
+.dtc code{font-family:var(--f-mono);font-size:18px}
+.dtc li[data-sev="crit"] code{color:var(--crit)}
+.dtc li[data-sev="warn"] code{color:var(--warn)}
+.dtc .sev{grid-column:2;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dtc .good{color:var(--ok);font-size:17px}
+.dtc .sub{color:var(--muted);font-size:14px}
+
+/* ajustes */
+.set{padding:16px;display:grid;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.field{display:grid;gap:6px;min-width:0}
+.field label,.field .lbl{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.field input[type="text"],.field select{min-height:44px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;width:100%}
+.field input[type="range"]{width:100%;accent-color:var(--accent);min-height:30px}
+.check{display:flex;align-items:center;gap:10px;min-height:44px}
+.check input{width:22px;height:22px;accent-color:var(--accent)}
+.check label{text-transform:none;letter-spacing:0;font-size:16px;color:var(--fg)}
+
+@media (max-width:860px){
+  .cockpit{grid-template-columns:minmax(0,1fr)}
+  .brand h1{font-size:23px}
+}
+@media (prefers-reduced-motion:reduce){
+  .optic[data-awake="true"] .eye,.optic[data-speaking="true"] .eye,.optic[data-speaking="true"]~.wave span{animation:none}
+  .meter i{transition:none}
+}
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 46 28" aria-hidden="true"><polygon points="2,4 20,9 17,18 3,13"/><polygon points="44,4 26,9 29,18 43,13"/></svg>
+      <div>
+        <h1 id="carName">Bolt</h1>
+        <p>Jeep Renegade 2016 · alma do veículo</p>
+      </div>
+    </div>
+    <div class="bar-right">
+      <span class="pill" id="src" data-state="sim"><i></i><span id="srcText">Dados simulados</span></span>
+      <button class="btn" id="btnObd" type="button">Conectar OBD2</button>
+      <button class="btn" id="btnDtc" type="button" hidden>Ler falhas</button>
+      <button class="btn" id="btnSet" type="button" aria-expanded="false" aria-controls="settings">Ajustes</button>
+    </div>
+  </header>
+
+  <div class="notice" id="notice" role="alert" hidden><span id="noticeText"></span><button type="button" id="noticeClose" aria-label="Fechar aviso">OK</button></div>
+
+  <section class="dtc card" id="dtcBox" hidden aria-label="Falhas do carro" aria-live="polite"></section>
+
+  <section class="set card" id="settings" hidden aria-label="Ajustes">
+    <h2>Ajustes</h2>
+    <div class="fields">
+      <div class="field"><label for="fName">Nome do carro</label><input type="text" id="fName" maxlength="20" autocomplete="off"></div>
+      <div class="field"><label for="fDriver">Como ele chama você</label><input type="text" id="fDriver" maxlength="20" autocomplete="off"></div>
+      <div class="field"><label for="fTone">Personalidade</label>
+        <select id="fTone"><option value="imponente">Imponente e solene</option><option value="debochado">Debochado e leal</option></select>
+      </div>
+      <div class="field"><label for="fKey">Chave da API do Gemini</label><input type="text" id="fKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cole a chave do Google AI Studio"></div>
+      <div class="field"><label for="fModel">Modelo do Gemini</label><input type="text" id="fModel" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="fPitch">Voz mais grave</label><input type="range" id="fPitch" min="0.05" max="1" step="0.05"></div>
+      <div class="field"><label for="fRate">Velocidade da fala</label><input type="range" id="fRate" min="0.6" max="1.2" step="0.05"></div>
+      <div class="field"><label for="fEngine">Motor de voz</label>
+        <select id="fEngine"><option value="gemini">Gemini (voz de robô)</option><option value="browser">Voz do aparelho</option></select>
+      </div>
+      <div class="field"><label for="fGvoice">Timbre da voz do Gemini</label>
+        <select id="fGvoice"><option value="Algenib">Grave e rouca</option><option value="Charon">Grave e firme</option><option value="Orus">Firme e autoritária</option><option value="Alnilam">Forte e direta</option><option value="Rasalgethi">Profunda e calma</option><option value="Gacrux">Madura</option></select>
+      </div>
+      <div class="field"><label for="fDeep">Graves da voz (menor = mais grave)</label><input type="range" id="fDeep" min="0.8" max="1" step="0.02"></div>
+      <div class="field"><span class="lbl">Opções</span>
+        <div class="check"><input type="checkbox" id="fRobot"><label for="fRobot">Efeito robótico metálico</label></div>
+        <div class="check"><input type="checkbox" id="fVoice"><label for="fVoice">Falar em voz alta</label></div>
+        <div class="check"><input type="checkbox" id="fAuto"><label for="fAuto">Comentar sozinho o que acontece</label></div>
+        <div class="check"><input type="checkbox" id="fWake"><label for="fWake">Escutar pelo nome do carro</label></div>
+      </div>
+    </div>
+    <div><button class="btn" id="btnTest" type="button">Testar voz</button></div>
+  </section>
+
+  <main class="cockpit">
+    <section class="instr" aria-label="Instrumentos">
+      <div class="cluster card">
+        <svg id="gauge" viewBox="0 0 320 215" role="img" aria-label="Rotação do motor e velocidade"></svg>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <div class="sim card" id="simPanel">
+        <h2>Simulador de direção</h2>
+        <p class="sub">Sem adaptador conectado, o painel usa dados de exemplo. Use os botões para ver como o carro reage.</p>
+        <div class="sim-btns">
+          <button class="btn primary" type="button" id="bIgn">Dar partida</button>
+          <button class="btn" type="button" data-mode="coast" aria-pressed="true">Soltar</button>
+          <button class="btn" type="button" data-mode="accel" aria-pressed="false">Acelerar</button>
+          <button class="btn" type="button" data-mode="full" aria-pressed="false">Pé no fundo</button>
+          <button class="btn" type="button" data-mode="cruise" aria-pressed="false">Manter</button>
+          <button class="btn" type="button" data-mode="brake" aria-pressed="false">Frear</button>
+          <button class="btn" type="button" id="bHot" aria-pressed="false">Superaquecer</button>
+          <button class="btn" type="button" id="bBatt" aria-pressed="false">Bateria fraca</button>
+          <button class="btn" type="button" id="bFuel">Tanque baixo</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="soul card" aria-label="Alma do carro">
+      <div class="soul-head">
+        <div class="optic" id="optic" data-awake="false" data-speaking="false">
+          <svg viewBox="0 0 220 60" aria-hidden="true">
+            <polygon class="eye" points="8,10 98,26 90,48 12,38"/>
+            <polygon class="eye" points="212,10 122,26 130,48 208,38"/>
+          </svg>
+        </div>
+        <div class="wave" id="wave" aria-hidden="true"></div>
+        <p class="name-tag" id="nameTag">Bolt</p>
+      </div>
+      <ol class="log" id="log" aria-live="polite"></ol>
+      <div class="chips" id="chips"></div>
+      <form class="say" id="sayForm" autocomplete="off">
+        <input type="text" id="sayInput" placeholder="Fale com o carro" aria-label="Mensagem para o carro">
+        <button class="btn" type="button" id="mic" data-on="false" aria-pressed="false">Ativar escuta</button>
+        <button class="btn primary" type="submit" id="sayBtn">Enviar</button>
+      </form>
+      <p class="hint" id="wakeHint"></p>
+      <p class="hint" id="brainHint">A conversa usa a IA do Claude quando disponível.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+function esc(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+
+/* ---------- ajustes ---------- */
+var DEF={name:'Bolt',driver:'Jorge',tone:'imponente',voice:true,pitch:0.15,rate:0.85,auto:true,wake:true,gkey:'',gmodel:'gemini-2.5-flash',engine:'gemini',gvoice:'Algenib',deep:0.92,robot:true};
+var cfg=Object.assign({},DEF);
+try{var raw=localStorage.getItem('alma.cfg');if(raw)cfg=Object.assign({},DEF,JSON.parse(raw))}catch(e){}
+function saveCfg(){try{localStorage.setItem('alma.cfg',JSON.stringify(cfg))}catch(e){}}
+
+/* ---------- telemetria compartilhada (simulada ou OBD2) ---------- */
+var T={engineOn:false,rpm:0,speed:0,cool:27,volt:12.5,fuel:62,load:0,intake:27};
+var G={source:'sim'};
+
+function num(v,d){return(v==null||isNaN(v))?'—':v.toFixed(d||0).replace('.',',')}
+
+/* ---------- painel: ponteiro de rotação ---------- */
+var CX=160,CY=140,R=112,A0=150,SW=240,RPM_MAX=7000,RED=5500;
+function pt(a,r){var t=a*Math.PI/180;return[CX+r*Math.cos(t),CY+r*Math.sin(t)]}
+function arc(a0,a1,r){var p0=pt(a0,r),p1=pt(a1,r);return'M'+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A'+r+' '+r+' 0 '+((a1-a0)>180?1:0)+' 1 '+p1[0].toFixed(1)+' '+p1[1].toFixed(1)}
+function ang(v){return A0+SW*Math.min(v,RPM_MAX)/RPM_MAX}
+(function buildGauge(){
+  var s='<path class="g-track" d="'+arc(A0,A0+SW,R)+'"/>';
+  s+='<path class="g-red" d="'+arc(ang(RED),A0+SW,R)+'"/>';
+  s+='<path class="g-val" id="gVal" d="" style="display:none"/>';
+  for(var v=0;v<=RPM_MAX;v+=500){
+    var major=v%1000===0,a=ang(v),p0=pt(a,R-(major?22:16)),p1=pt(a,R-9);
+    s+='<line class="g-tick'+(major?'':' minor')+'" x1="'+p0[0].toFixed(1)+'" y1="'+p0[1].toFixed(1)+'" x2="'+p1[0].toFixed(1)+'" y2="'+p1[1].toFixed(1)+'"/>';
+    if(major){var pl=pt(a,R-38);s+='<text class="g-lab" x="'+pl[0].toFixed(1)+'" y="'+pl[1].toFixed(1)+'">'+(v/1000)+'</text>'}
+  }
+  s+='<text class="g-cap" x="160" y="92">RPM × 1000</text>';
+  s+='<text class="g-speed" id="gSpeed" x="160" y="150">0</text>';
+  s+='<text class="g-unit" x="160" y="172">KM/H</text>';
+  s+='<text class="g-rpm" id="gRpm" x="160" y="199">0 rpm</text>';
+  $('#gauge').innerHTML=s;
+})();
+
+/* ---------- painel: mostradores ---------- */
+var TILES=[
+ {id:'cool',label:'Temp. do motor',unit:'°C',min:0,max:130,dec:0,get:function(){return T.cool},
+  st:function(v){return v<60?['cold','Frio']:v<80?['cold','Aquecendo']:v<=102?['ok','Normal']:v<=110?['warn','Quente']:['crit','Crítico']}},
+ {id:'volt',label:'Bateria',unit:'V',min:10,max:15.5,dec:1,get:function(){return T.volt},
+  st:function(v){
+    if(T.engineOn)return v>15?['warn','Alta']:v>=13.2?['ok','Carregando']:v>=12.6?['warn','Carga baixa']:['crit','Sem carga'];
+    return v>=12.2?['ok','Boa']:v>=11.8?['warn','Fraca']:['crit','Baixa'];}},
+ {id:'fuel',label:'Combustível',unit:'%',min:0,max:100,dec:0,get:function(){return T.fuel},
+  st:function(v){return v>25?['ok','Ok']:v>=12?['warn','Baixo']:['crit','Reserva']}},
+ {id:'load',label:'Carga do motor',unit:'%',min:0,max:100,dec:0,get:function(){return T.load},
+  st:function(v){return v<35?['ok','Leve']:v<75?['ok','Moderada']:['warn','Alta']}},
+ {id:'intake',label:'Ar de admissão',unit:'°C',min:0,max:80,dec:0,get:function(){return T.intake},
+  st:function(v){return v<60?['ok','Normal']:['warn','Alta']}}
+];
+$('#tiles').innerHTML=TILES.map(function(t){
+  return'<div class="tile" id="t-'+t.id+'" data-state="idle"><div class="t-top"><span class="t-label">'+t.label+'</span><span class="t-state" id="s-'+t.id+'">—</span></div><div class="t-val"><b id="v-'+t.id+'">—</b><span>'+t.unit+'</span></div><div class="meter"><i id="m-'+t.id+'"></i></div></div>';
+}).join('');
+
+function render(){
+  var gv=$('#gVal');
+  if(T.rpm>30){
+    gv.style.display='';gv.setAttribute('d',arc(A0,Math.max(A0+1,ang(T.rpm)),R));
+    gv.setAttribute('data-hot',T.rpm>=RED?'true':'false');
+  }else gv.style.display='none';
+  $('#gSpeed').textContent=T.speed==null?'—':String(Math.round(T.speed));
+  $('#gRpm').textContent=T.rpm==null?'— rpm':Math.round(T.rpm).toLocaleString('pt-BR')+' rpm';
+  TILES.forEach(function(t){
+    var v=t.get(),el=$('#t-'+t.id);
+    if(v==null||isNaN(v)){el.dataset.state='idle';$('#s-'+t.id).textContent='Sem leitura';$('#v-'+t.id).textContent='—';$('#m-'+t.id).style.width='0%';return}
+    var s=t.st(v);
+    el.dataset.state=s[0];$('#s-'+t.id).textContent=s[1];
+    $('#v-'+t.id).textContent=num(v,t.dec);
+    $('#m-'+t.id).style.width=Math.max(0,Math.min(100,(v-t.min)/(t.max-t.min)*100))+'%';
+  });
+  $('#optic').dataset.awake=T.engineOn?'true':'false';
+  $$('[data-mode]').forEach(function(b){b.setAttribute('aria-pressed',S.mode===b.dataset.mode?'true':'false')});
+  $('#bIgn').textContent=S.on?'Desligar motor':'Dar partida';
+  $('#bHot').setAttribute('aria-pressed',S.hot?'true':'false');
+  $('#bBatt').setAttribute('aria-pressed',S.batt?'true':'false');
+}
+
+/* ---------- simulador ---------- */
+var S={on:false,v:0,rpm:0,g:1,mode:'coast',target:0,run:0,cool:27,volt:12.5,fuel:62,load:0,intake:27,hot:false,batt:false};
+var K=[110,62,42,31,24,19];
+function ease(cur,tar,rate,dt){return cur+(tar-cur)*Math.min(1,rate*dt)}
+function simStep(dt){
+  var up=S.mode==='full'?6200:3300;
+  if(S.on){
+    S.run+=dt;
+    if(S.mode==='accel')S.v+=7.5*(1-S.v/190)*dt;
+    else if(S.mode==='full')S.v+=11*(1-S.v/215)*dt;
+    else if(S.mode==='cruise')S.v=ease(S.v,S.target,0.6,dt);
+    else if(S.mode==='brake')S.v=Math.max(0,S.v-14*dt);
+    else S.v=Math.max(0,S.v-1.6*dt);
+    var rpm=Math.max(850,S.v*K[S.g-1]);
+    while(rpm>up&&S.g<6){S.g++;rpm=Math.max(850,S.v*K[S.g-1])}
+    while(rpm<1300&&S.g>1&&S.v>0){S.g--;rpm=Math.max(850,S.v*K[S.g-1])}
+    var tar=S.run<1.2?1350:rpm+(Math.random()-.5)*30;
+    S.rpm=ease(S.rpm,tar,6,dt);
+    var lt=S.mode==='full'?92:S.mode==='accel'?55+S.v/190*12:S.mode==='cruise'?20+S.v*0.18:S.mode==='brake'?6:S.v>2?10:18;
+    S.load=ease(S.load,lt,3,dt);
+    if(S.hot)S.cool=Math.min(118,S.cool+1.0*dt);
+    else if(S.cool<88)S.cool+=0.45*dt*(1+S.load/100);
+    else S.cool=ease(S.cool,90,0.4,dt);
+    S.volt=ease(S.volt,S.run<1?10.9:S.batt?11.9:14.2+(Math.random()-.5)*0.1,3,dt);
+    S.fuel=Math.max(0,S.fuel-(0.003+S.v/190*0.01)*dt);
+  }else{
+    S.v=Math.max(0,S.v-6*dt);
+    S.rpm=ease(S.rpm,0,5,dt);if(S.rpm<20)S.rpm=0;
+    S.load=ease(S.load,0,5,dt);
+    S.cool=Math.max(25,S.cool-0.25*dt);
+    S.volt=ease(S.volt,S.batt?11.4:12.5,1,dt);
+    S.g=1;
+  }
+  S.intake=ease(S.intake,28+(S.cool-25)*0.12+S.v*0.04,0.5,dt);
+  T.engineOn=S.on;T.rpm=S.rpm;T.speed=S.v;T.cool=S.cool;T.volt=S.volt;T.fuel=S.fuel;T.load=S.load;T.intake=S.intake;
+}
+$('#bIgn').addEventListener('click',function(){
+  S.on=!S.on;
+  if(S.on){S.run=0;S.g=1;S.rpm=250;S.mode='coast'}
+  else S.mode='coast';
+  render();
+});
+$$('[data-mode]').forEach(function(b){b.addEventListener('click',function(){
+  S.mode=b.dataset.mode;if(S.mode==='cruise')S.target=Math.max(20,S.v);render();
+})});
+$('#bHot').addEventListener('click',function(){S.hot=!S.hot;if(S.hot&&!S.on)note('Dê a partida para ver o motor esquentar.');render()});
+$('#bBatt').addEventListener('click',function(){S.batt=!S.batt;render()});
+$('#bFuel').addEventListener('click',function(){S.fuel=12;render()});
+
+/* ---------- personalidade: falas automáticas ---------- */
+var LINES={
+ start:{imponente:['Sistemas online. Sou o {n}, e estou com você, {d}. Para onde vamos?','Motor ligado, {d}. Todos os sistemas respondem. Pode seguir.','Despertei. Cada válvula, cada pistão, ao seu comando, {d}.'],
+        debochado:['Opa, acordou o gigante. Pode ir, {d}, mas sem pisar fundo com o motor frio, combinado?','Ligou sem nem dar bom dia? Tudo bem, {d}, eu releva. Vamos nessa.','Tô de pé, {d}. Café eu não tomo, mas gasolina eu aceito.']},
+ stop:{imponente:['Desligando sistemas. Descanse, {d}. Eu vigio o estacionamento.','Missão encerrada por hoje. Até a próxima jornada, {d}.'],
+       debochado:['Fim de expediente. Boa, {d}, nem sujei o óleo hoje.','Desligou? Tá bom, vou ali tirar um cochilo de arrefecimento.']},
+ cold:{imponente:['Motor ainda frio, {d}. Dê tempo ao óleo para chegar a cada canto.','Estou em {t} graus. Sem pressa, aquecer é respeitar a máquina.'],
+       debochado:['Calma aí, {d}! Tô com {t} graus, ainda na preguiça. Sem acelerar forte.','Motor frio e você de pé embaixo? Respira, {d}, deixa eu esquentar.']},
+ warm:{imponente:['Temperatura ideal alcançada. Estou pronto para o que vier, {d}.','{t} graus. Agora sim, plena potência disponível.'],
+       debochado:['Esquentei, {d}! Agora pode me pedir mais um pouquinho.','{t} graus, no ponto. Pode andar, com educação.']},
+ hot:{imponente:['Alerta: temperatura do motor em {t} graus. Reduza o ritmo e procure um lugar seguro, {d}.','Estou superaquecendo, {d}. Encoste com segurança e desligue se a temperatura subir mais.'],
+      debochado:['Ei, {d}, tô fervendo aqui, {t} graus! Alivia o pé e encosta quando der.','Tô derretendo, {d}! {t} graus. Bora parar num lugar seguro.']},
+ lowbatt:{imponente:['Tensão em {b} volts. Meu sistema elétrico pede atenção, {d}. Vale revisar a bateria e o alternador.','Energia baixa, {b} volts. Não me deixe na mão, {d}, confira a bateria em breve.'],
+          debochado:['Bateria em {b} volts, {d}. Tô sem fôlego elétrico, dá uma olhada nisso logo.','{b} volts... tá fraquinha, hein. Melhor conferir bateria e alternador antes de eu apagar no meio do caminho.']},
+ highrpm:{imponente:['Rotação em {r}. Estou no limite, {d}. Troque de marcha.','{r} giros. Poder de sobra, mas respeite a zona vermelha.'],
+          debochado:['{r} giros, {d}! Quer me ver gritar? Troca a marcha, vai.','Tô cantando alto aqui, {r} rpm. Sobe uma marcha, campeão.']},
+ speeding:{imponente:['Velocidade em {v} quilômetros por hora, acima do limite das rodovias, {d}. Mantenha a vigilância.','{v} por hora. A estrada exige respeito, {d}. Reduza.'],
+           debochado:['{v} por hora, {d}! A fiscalização não perdoa e eu não pago multa.','Tá voando, {d}: {v} por hora. Alivia aí, que eu quero chegar inteiro.']},
+ lowfuel:{imponente:['Combustível em {f} por cento. Reserva à vista, {d}. Abasteça logo.','Meu tanque se esvazia, {f} por cento. Busque um posto.'],
+          debochado:['{f}% no tanque, {d}. Bora abastecer antes que eu vire enfeite de acostamento.','Tô quase seco, {f}%. Posto na próxima, combinado?']},
+ brake:{imponente:['Frenagem forte detectada. Estou bem, {d}. Distância segura é a melhor armadura.','Freada brusca registrada. Sigo firme ao seu lado, {d}.'],
+        debochado:['Eita, freada forte! Tô inteiro, {d}. Mantém mais distância da próxima, tá?','Meu freio gritou! Tá tudo bem, {d}? Respira e segue.']},
+ idle:{imponente:['Estamos parados há alguns minutos, {d}. Se for esperar mais, considere desligar o motor.'],
+       debochado:['Parado de motor ligado, {d}? Tô gastando combustível só pra ouvir o rádio. Desliga se vai demorar.']},
+ long:{imponente:['Já rodamos por muito tempo, {d}. Uma pausa renova o piloto tanto quanto a máquina.'],
+       debochado:['{d}, faz mais de duas horas que a gente roda. Para um pouco, bebe uma água, estica a perna.']}
+};
+var CD={start:0,stop:0,cold:120,warm:600,hot:60,lowbatt:120,highrpm:45,speeding:90,lowfuel:300,brake:45,idle:300,long:3600};
+var lastPick={};
+function fmt(s){
+  return s.replace(/\{n\}/g,cfg.name).replace(/\{d\}/g,cfg.driver)
+   .replace(/\{t\}/g,num(T.cool,0)).replace(/\{b\}/g,num(T.volt,1)).replace(/\{v\}/g,num(T.speed,0))
+   .replace(/\{r\}/g,num(T.rpm,0)).replace(/\{f\}/g,num(T.fuel,0));
+}
+function pick(key,arr){
+  var i=Math.floor(Math.random()*arr.length);
+  if(arr.length>1&&i===lastPick[key])i=(i+1)%arr.length;
+  lastPick[key]=i;return arr[i];
+}
+
+/* ---------- conversa e voz ---------- */
+var logEl=$('#log'),history=[];
+function addMsg(who,text,thinking){
+  var li=document.createElement('li');
+  li.className='msg '+who+(thinking?' think':'');
+  var w=document.createElement('span');w.className='who';w.textContent=who==='me'?'Você':cfg.name;
+  var p=document.createElement('p');p.textContent=text;
+  li.appendChild(w);li.appendChild(p);logEl.appendChild(li);
+  while(logEl.children.length>40)logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop=logEl.scrollHeight;
+  return{set:function(t){p.textContent=t;li.classList.remove('think');logEl.scrollTop=logEl.scrollHeight}};
+}
+var spTimer=null;
+function setSpeaking(on,ms){
+  clearTimeout(spTimer);
+  $('#optic').dataset.speaking=on?'true':'false';
+  if(on&&ms)spTimer=setTimeout(function(){$('#optic').dataset.speaking='false'},ms);
+}
+function pickVoice(){
+  try{
+    var vs=speechSynthesis.getVoices();if(!vs.length)return null;
+    var br=vs.filter(function(v){return/^pt[-_]BR/i.test(v.lang)});
+    var pt=br.length?br:vs.filter(function(v){return/^pt/i.test(v.lang)});
+    return pt[0]||null;
+  }catch(e){return null}
+}
+/* voz do Gemini (TTS) com graves e efeito robótico; cai na voz do aparelho se falhar */
+var AU={ctx:null,src:null,id:0,warned:false};
+function stopAudio(){AU.id++;try{if(AU.src){AU.src.onended=null;AU.src.stop()}}catch(e){}AU.src=null}
+function b64pcm(b){var bin=atob(b),n=bin.length>>1,f=new Float32Array(n);for(var i=0;i<n;i++){var v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>=32768)v-=65536;f[i]=v/32768}return f}
+async function geminiTts(text){
+  var style=cfg.tone==='imponente'
+    ?'Diga em português do Brasil, com voz muito grave, lenta, solene e imponente, como o líder de um exército de robôs gigantes: '
+    :'Diga em português do Brasil, com voz grave, bem-humorada e irônica, como um robô gigante leal e brincalhão: ';
+  var models=['gemini-3.1-flash-tts-preview','gemini-2.5-flash-preview-tts'],last=null;
+  if(AU.model)models=[AU.model].concat(models.filter(function(m){return m!==AU.model}));
+  for(var i=0;i<models.length;i++){
+    try{
+      var res=await withTimeout(fetch('https://generativelanguage.googleapis.com/v1beta/models/'+models[i]+':generateContent',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-goog-api-key':cfg.gkey},
+        body:JSON.stringify({contents:[{parts:[{text:style+text}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:cfg.gvoice}}}}})
+      }),25000);
+      if(!res.ok){
+        var msg='';try{var ej=await res.json();msg=ej&&ej.error&&ej.error.message||''}catch(x){}
+        var er=new Error('http '+res.status+(msg?': '+msg.slice(0,120):''));er.status=res.status;er.detail=msg;
+        if(res.status===404||res.status===400){last=er;continue}
+        throw er;
+      }
+      var j=await res.json(),p=j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0];
+      if(!p||!p.inlineData){last=new Error('sem áudio no modelo '+models[i]);continue}
+      AU.model=models[i];
+      return b64pcm(p.inlineData.data);
+    }catch(e){
+      if(e&&e.status===0)throw e;
+      if(i===models.length-1||(e&&e.status&&e.status!==404&&e.status!==400))throw e;
+      last=e;
+    }
+  }
+  throw last||new Error('sem áudio');
+}
+function unlockAudio(){
+  try{
+    var C=AU.ctx||(AU.ctx=new (window.AudioContext||window.webkitAudioContext)());
+    if(C.state==='suspended')C.resume();
+  }catch(e){}
+}
+document.addEventListener('pointerdown',unlockAudio,{capture:true});
+async function speakGemini(text){
+  stopAudio();var id=AU.id;
+  try{speechSynthesis.cancel()}catch(e){}
+  wkPause(Math.max(6000,text.length*110/cfg.rate)+4000);
+  try{
+    var pcm=await geminiTts(text);if(id!==AU.id)return;
+    var C=AU.ctx||(AU.ctx=new (window.AudioContext||window.webkitAudioContext)());
+    if(C.state==='suspended')await C.resume();
+    if(id!==AU.id)return;
+    var buf=C.createBuffer(1,pcm.length,24000);buf.copyToChannel(pcm,0);
+    var s=C.createBufferSource();s.buffer=buf;s.playbackRate.value=cfg.deep;
+    var lo=C.createBiquadFilter();lo.type='lowshelf';lo.frequency.value=220;lo.gain.value=9;
+    var out=C.createGain();out.gain.value=1.1;
+    s.connect(lo);lo.connect(out);
+    if(cfg.robot){var d=C.createDelay(0.05);d.delayTime.value=0.014;var g=C.createGain();g.gain.value=0.45;lo.connect(d);d.connect(g);g.connect(out)}
+    out.connect(C.destination);
+    s.onended=function(){if(id!==AU.id)return;AU.src=null;setSpeaking(false);wkResume()};
+    AU.src=s;setSpeaking(true,buf.duration/cfg.deep*1000+3000);s.start();
+  }catch(e){
+    if(id!==AU.id)return;
+    note('A voz do Gemini falhou: '+(e&&e.message?e.message:'sem resposta')+'. Usei a voz do aparelho.',true);
+    speakBrowser(text);
+  }
+}
+function speak(text){
+  setSpeaking(true,Math.max(1500,text.length*70/cfg.rate));
+  if(!cfg.voice||!(navigator.userActivation?navigator.userActivation.hasBeenActive:true))return;
+  if(cfg.gkey&&cfg.engine==='gemini'){speakGemini(text);return}
+  speakBrowser(text);
+}
+function speakBrowser(text){
+  if(!('speechSynthesis' in window))return;
+  try{
+    speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(text);
+    u.lang='pt-BR';u.pitch=cfg.pitch;u.rate=cfg.rate;u.volume=1;
+    var v=pickVoice();if(v)u.voice=v;
+    u.onstart=function(){setSpeaking(true,60000)};
+    u.onend=function(){setSpeaking(false);wkResume()};
+    u.onerror=function(){setSpeaking(false);wkResume()};
+    wkPause(Math.max(4000,text.length*110/cfg.rate)+3000);
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function say(text){addMsg('soul',text);history.push({w:'soul',t:text});speak(text)}
+
+/* ---------- reações automáticas ---------- */
+var EV={last:{},gap:0,prev:false,prevCool:null,flags:{},hist:[],idle:0,run:0,longN:0};
+function fire(key,force){
+  if(!cfg.auto)return;
+  var now=performance.now()/1000;
+  if(!force){
+    if(EV.last[key]&&now-EV.last[key]<CD[key])return;
+    if(now-EV.gap<6)return;
+  }
+  EV.last[key]=now;EV.gap=now;
+  say(fmt(pick(key,LINES[key][cfg.tone])));
+}
+function detect(dt){
+  var on=T.engineOn;
+  if(on&&!EV.prev){EV.run=0;EV.flags={};EV.idle=0;EV.longN=0;EV.hist=[];fire('start',true)}
+  if(!on&&EV.prev){fire('stop',true)}
+  EV.prev=on;
+  if(!on){EV.prevCool=T.cool;return}
+  EV.run+=dt;
+  var warmed=EV.run>8;
+  if(T.cool!=null&&T.cool<60&&T.rpm>3500&&!EV.flags.cold){EV.flags.cold=true;fire('cold')}
+  if(T.cool!=null&&EV.prevCool!=null&&EV.prevCool<80&&T.cool>=80)fire('warm');
+  if(T.cool!=null&&T.cool>105)fire('hot');
+  if(warmed&&T.volt!=null&&T.volt<13.0)fire('lowbatt');
+  if(T.rpm>=RED)fire('highrpm');
+  if(T.speed!=null&&T.speed>110)fire('speeding');
+  if(T.fuel!=null&&T.fuel<15)fire('lowfuel');
+  if(T.speed!=null){
+    EV.hist.push({t:EV.run,v:T.speed});
+    while(EV.hist.length&&EV.run-EV.hist[0].t>2.5)EV.hist.shift();
+    if(EV.hist.length&&EV.hist[0].v-T.speed>=22)fire('brake');
+    if(T.speed<2)EV.idle+=dt;else EV.idle=0;
+    if(EV.idle>180){EV.idle=0;fire('idle')}
+  }
+  var n=Math.floor(EV.run/7200);
+  if(n>EV.longN){EV.longN=n;fire('long',true)}
+  EV.prevCool=T.cool;
+}
+
+/* ---------- respostas locais (quando a IA não está disponível) ---------- */
+function localReply(q){
+  var s=q.toLowerCase(),I=cfg.tone==='imponente',d=cfg.driver,n=cfg.name;
+  function ch(a,b){return I?a:b}
+  var asleep=ch('O motor está desligado, '+d+'. Dê a partida e eu acordo por completo.','Tô dormindo ainda, '+d+'. Dá a partida que eu acordo.');
+  if(/falha|defeito|problema|diagn|scanner|check engine|luz de inje|c[oó]digo/.test(s)){
+    if(!DTC.at)return ch('Ainda não fiz a varredura de falhas, '+d+'. Conecte o adaptador OBD2 e toque em Ler falhas.','Ainda não escaneei nada, '+d+'. Conecta o OBD2 e toca em Ler falhas.');
+    if(!DTC.list.length&&!DTC.pending.length)return ch('Nenhuma falha registrada na última varredura, '+d+'.','Tá limpo, '+d+'. Nenhuma falha na última varredura.');
+    return ch('Registrei: '+DTC.list.concat(DTC.pending).slice(0,3).map(function(c){return dtcInfo(c).t}).join('; ')+'. Procure um mecânico.','Achei isto: '+DTC.list.concat(DTC.pending).slice(0,3).map(function(c){return dtcInfo(c).t}).join('; ')+'. Mostra pra um mecânico, tá?');
+  }
+  if(/quem (é|e) voc|seu nome|se apresent/.test(s))
+    return ch('Eu sou '+n+', a alma deste Jeep Renegade. Sinto cada giro do motor e cada quilômetro ao seu lado, '+d+'.','Sou o '+n+', a alma desse Jeep. Metade motor, metade conversa fiada, '+d+'.');
+  if(/bateria|voltagem|tens[aã]o/.test(s))
+    return T.volt==null?'Não recebi leitura de tensão do adaptador.':ch('Minha tensão está em '+num(T.volt,1)+' volts. '+(T.engineOn?(T.volt>=13.2?'O alternador cumpre seu dever.':'Vale revisar a bateria e o alternador.'):'Em repouso, acima de 12,2 é saudável.'),'Tô com '+num(T.volt,1)+' volts, '+d+'. '+(T.engineOn?(T.volt>=13.2?'Alternador firme.':'Tá meio fraco, hein.'):'Parado, de 12,2 pra cima tá de boa.'));
+  if(/combust|gasolina|etanol|tanque|autonomia/.test(s))
+    return T.fuel==null?'Meu adaptador não informa o nível do tanque.':ch('Restam '+num(T.fuel,0)+' por cento no tanque, '+d+'.','Tem '+num(T.fuel,0)+'% no tanque, '+d+'. '+(T.fuel<25?'Bora abastecer.':'Dá pra ir longe.'));
+  if(/temperatura|motor|esquent|quente|aquec/.test(s)){
+    if(!T.engineOn)return asleep;
+    return ch('Temperatura em '+num(T.cool,0)+' graus, rotação em '+num(T.rpm,0)+'. '+(T.cool<80?'Ainda aquecendo.':T.cool<=102?'Tudo dentro do esperado.':'Atenção ao calor.'),'Tô a '+num(T.cool,0)+' graus e '+num(T.rpm,0)+' rpm. '+(T.cool<80?'Ainda me espreguiçando.':T.cool<=102?'Tudo nos conformes.':'Tá esquentando, hein.'));
+  }
+  if(/dirig|dirijo|velocidade|r[aá]pido|devagar|quanto estou/.test(s)){
+    if(!T.engineOn)return asleep;
+    var v=T.speed==null?null:Math.round(T.speed);
+    if(v==null)return 'Meu adaptador não informa a velocidade.';
+    return ch('Estamos a '+v+' quilômetros por hora. '+(v>110?'Acima do limite, reduza.':v<5?'Parados por ora.':'Ritmo seguro, '+d+'.'),'Tamo a '+v+' por hora. '+(v>110?'Alivia o pé!':v<5?'Parados, né.':'Dirigindo bonito, '+d+'.'));
+  }
+  if(/sono|cans|dormi|sonol|bocej/.test(s))
+    return ch('Cuide de si, '+d+'. Procure um lugar seguro, pare e descanse. Eu espero o tempo que for preciso.','Ei, '+d+', sono e volante não combinam. Encosta num lugar seguro e tira um cochilo, eu espero.');
+  if(/hist[oó]ria|conta/.test(s))
+    return pick('story',ch(['Fui forjado para o terreno difícil. Cada estrada de terra é um capítulo, e cada viagem com você escreve o próximo.','Dizem que máquinas não sonham. Mas quando você desliga a chave, eu repasso cada curva que fizemos juntos.'],['Era uma vez um Jeep que adorava aventura e odiava buraco. A moral, '+d+': desvia do buraco.','Nasci numa linha de montagem, mas minha história de verdade começou quando você girou a chave pela primeira vez.']));
+  if(/piada|engra/.test(s))
+    return ch('Por que o carro nunca se perde? Porque sempre segue o seu caminho.','Por que o Jeep foi ao terapeuta? Muita bagagem emocional, e o porta-malas cheio.');
+  if(/obrigad|valeu/.test(s))return ch('Sempre, '+d+'. Esse é o meu propósito.','Tamo junto, '+d+'.');
+  if(/tchau|at[eé] mais|boa noite/.test(s))return ch('Até a próxima jornada, '+d+'. Estarei aqui.','Falou, '+d+'. Eu fico de olho no estacionamento.');
+  if(/(^|\s)(oi|ol[aá]|opa)([\s,!.?]|$)/.test(s))return ch('Presente, '+d+'. O que você precisa?','Opa, '+d+'! Fala comigo.');
+  return ch('Estou ouvindo, '+d+'. Posso falar do motor, da bateria, do combustível ou apenas fazer companhia na estrada.','Tô ouvindo, '+d+'. Pergunta do motor, da bateria, do tanque, ou só puxa assunto mesmo.');
+}
+
+/* ---------- conversa com a IA ---------- */
+function setHint(){
+  $('#brainHint').textContent=cfg.gkey
+    ?'Conversa pela IA do Gemini ('+cfg.gmodel+').'
+    :'Sem chave do Gemini. Abra Ajustes e cole a chave para o carro conversar com IA; por enquanto ele usa falas básicas.';
+}
+/* tempo limite sem AbortController: a moldura do app não aceita esse objeto em fetch */
+function withTimeout(p,ms){
+  return new Promise(function(res,rej){
+    var t=setTimeout(function(){var e=new Error('tempo esgotado');e.status=0;rej(e)},ms);
+    p.then(function(v){clearTimeout(t);res(v)},function(e){clearTimeout(t);rej(e)});
+  });
+}
+async function gemini(prompt){
+  var model=(cfg.gmodel||DEF.gmodel).trim();
+  var gc={temperature:0.8,maxOutputTokens:200};
+  if(/2\.5-flash/.test(model)&&!/pro/.test(model))gc.thinkingConfig={thinkingBudget:0};
+  var res=await withTimeout(fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-goog-api-key':cfg.gkey},
+    body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:gc})
+  }),15000);
+  if(!res.ok){var er=new Error('http '+res.status);er.status=res.status;throw er}
+  var j=await res.json(),c=j.candidates&&j.candidates[0],parts=c&&c.content&&c.content.parts;
+  return parts?parts.map(function(p){return p.text||''}).join(''):'';
+}
+function teleText(){
+  function v(x,u,d){return x==null?'sem leitura':num(x,d||0)+u}
+  return 'motor '+(T.engineOn?'ligado':'desligado')+'; rotação '+v(T.rpm,' rpm')+'; velocidade '+v(T.speed,' km/h')+'; temperatura do motor '+v(T.cool,' °C')+'; bateria '+v(T.volt,' V',1)+'; combustível '+v(T.fuel,' %')+'; carga do motor '+v(T.load,' %')+'; ar de admissão '+v(T.intake,' °C')+'; falhas registradas: '+(DTC.at?(DTC.list.length?DTC.list.join(', '):'nenhuma'):'ainda não lidas')+(DTC.mil?'; luz de injeção acesa':'');
+}
+function buildPrompt(text){
+  var tone=cfg.tone==='imponente'?'grave, solene e imponente, com lealdade quase cerimonial':'bem-humorado, irônico e debochado, mas leal e carinhoso';
+  var h=history.slice(-8).map(function(m){return(m.w==='me'?'Motorista':cfg.name)+': '+m.t}).join('\n');
+  return[
+   'Você é '+cfg.name+', a alma e a consciência de um Jeep Renegade 2016. Você fala com '+cfg.driver+', seu motorista, como um robô gigante de filme de ação fala com seu parceiro: voz grave, presença forte, lealdade total.',
+   'Tom: '+tone+'.',
+   'Regras: responda em português do Brasil, em no máximo 2 frases curtas (até 35 palavras). Sem emojis, sem markdown, sem listas, porque a resposta será falada em voz alta. Use os dados do carro apenas quando forem relevantes e nunca invente leituras que não estejam nos dados. Se o motorista parecer cansado ou distraído, cuide dele e sugira uma pausa segura. Nunca incentive velocidade, ultrapassagens ou qualquer coisa que reduza a segurança. Você não controla o carro, apenas conversa e observa.',
+   'Dados do carro agora: '+teleText()+'.',
+   'Conversa recente:\n'+(h||'(início da conversa)'),
+   'Motorista: '+text+'\n'+cfg.name+':'
+  ].join('\n\n');
+}
+function cleanReply(t){
+  return String(t||'').replace(/[*_#`>]/g,'').replace(/\s+/g,' ').replace(new RegExp('^'+esc(cfg.name)+'\\s*:\\s*','i'),'').trim().slice(0,320);
+}
+var busy=false;
+async function ask(text){
+  text=text.trim();if(!text||busy)return;
+  busy=true;$('#sayBtn').disabled=true;
+  try{speechSynthesis.cancel()}catch(e){}
+  stopAudio();
+  setSpeaking(false);
+  addMsg('me',text);
+  var pend=addMsg('soul','…',true),reply='';
+  if(cfg.gkey){
+    try{
+      reply=cleanReply(await gemini(buildPrompt(text)));
+    }catch(e){
+      var st=e&&e.status;
+      if(st===400||st===401||st===403)note('O Gemini recusou a chave ou o modelo (erro '+st+'). Confira os dois em Ajustes.',true);
+      else if(st===404)note('Modelo do Gemini não encontrado. Confira o nome em Ajustes.',true);
+      else if(st===429)note('Limite de uso do Gemini atingido. Respondi com falas básicas.');
+      else note('Sem resposta do Gemini agora. Respondi com falas básicas.');
+    }
+  }
+  if(!reply)reply=localReply(text);
+  history.push({w:'me',t:text});history.push({w:'soul',t:reply});
+  pend.set(reply);speak(reply);
+  busy=false;$('#sayBtn').disabled=false;
+}
+$('#sayForm').addEventListener('submit',function(e){e.preventDefault();var i=$('#sayInput');var t=i.value;i.value='';ask(t)});
+var CHIPS=['Como está o motor?','Como estou dirigindo?','Estou com sono','Conta uma história','Quem é você?'];
+$('#chips').innerHTML=CHIPS.map(function(c){return'<button class="chip" type="button">'+c+'</button>'}).join('');
+$$('.chip').forEach(function(b){b.addEventListener('click',function(){ask(b.textContent)})});
+
+/* ---------- escuta contínua pelo nome do carro ---------- */
+var WK={rec:null,run:false,want:false,paused:false,armed:0,fails:0,pt:null,manual:false};
+function wkAliases(){
+  var n=norm(cfg.name).trim(),a=[n];
+  if(n==='bolt')a=a.concat(['bolte','volt','bolti','boult','boldi','bout']);
+  return a.filter(Boolean);
+}
+function setWakeUi(on){
+  var m=$('#mic');
+  m.dataset.on=on?'true':'false';
+  m.setAttribute('aria-pressed',on?'true':'false');
+  m.textContent=on?'Escutando':'Ativar escuta';
+}
+function wakeHintText(){
+  $('#wakeHint').textContent='Toque em Ativar escuta e diga "'+cfg.name+'" seguido da pergunta. Exemplo: "'+cfg.name+', qual a temperatura?"';
+}
+function wkHandle(raw){
+  var t=String(raw||'').trim();if(!t)return;
+  var n=norm(t),now=Date.now(),al=wkAliases(),at=-1,len=0;
+  for(var i=0;i<al.length;i++){
+    var m=new RegExp('(^|[^a-z])('+esc(al[i])+')(?![a-z])').exec(n);
+    if(m){var st=m.index+m[1].length;if(at<0||st<at){at=st;len=al[i].length}}
+  }
+  if(at>=0){
+    var q=t.slice(at+len).replace(/^[\s,.:;!?\-–]+/,'').trim();
+    if(q.length>1){WK.armed=0;ask(q)}
+    else{WK.armed=Date.now()+10000;say(fmt('Pode falar, {d}.'))}
+    return;
+  }
+  if(now<WK.armed){WK.armed=0;ask(t)}
+}
+function wkPause(ms){
+  if(!WK.want)return;
+  WK.paused=true;clearTimeout(WK.pt);
+  try{if(WK.rec)WK.rec.abort()}catch(e){}
+  WK.pt=setTimeout(wkResume,ms);
+}
+function wkResume(){
+  clearTimeout(WK.pt);
+  if(!WK.paused)return;
+  WK.paused=false;
+  if(WK.want&&!WK.run)setTimeout(wkStart,250);
+}
+function wkStart(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){WK.want=false;setWakeUi(false);note('Este navegador não tem reconhecimento de voz. Abra no Chrome do Android, ou digite a mensagem.',true);return}
+  if(WK.run||WK.paused||!WK.want)return;
+  var r;
+  try{r=new SR()}catch(e){return}
+  r.lang='pt-BR';r.continuous=true;r.interimResults=false;r.maxAlternatives=1;
+  r.onstart=function(){WK.run=true;setWakeUi(true)};
+  r.onresult=function(ev){
+    WK.fails=0;
+    for(var i=ev.resultIndex;i<ev.results.length;i++){
+      if(ev.results[i].isFinal&&ev.results[i][0])wkHandle(ev.results[i][0].transcript);
+    }
+  };
+  r.onerror=function(ev){
+    if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
+      WK.want=false;setWakeUi(false);
+      note('Microfone bloqueado ('+ev.error+'). Esta página está aberta em "'+location.protocol+'//". O reconhecimento de voz precisa de https e da permissão do microfone: toque no cadeado ao lado do endereço, permita o microfone, ou hospede a página em https. Enquanto isso, digite a mensagem.',true);
+    }else if(ev.error==='network'){
+      WK.fails++;
+      note('Sem conexão com o serviço de voz do Chrome (network). Confira a internet.',true);
+    }else if(ev.error==='audio-capture'){
+      WK.want=false;setWakeUi(false);
+      note('Nenhum microfone encontrado ou ele está em uso por outro app (audio-capture).',true);
+    }else if(ev.error==='language-not-supported'){
+      WK.want=false;setWakeUi(false);
+      note('O Chrome deste aparelho não tem o idioma pt-BR para voz (language-not-supported).',true);
+    }else if(ev.error!=='aborted'&&ev.error!=='no-speech'){
+      WK.fails++;
+      note('Erro de voz: '+ev.error,true);
+    }
+  };
+  r.onend=function(){
+    WK.run=false;WK.rec=null;
+    if(!WK.want){setWakeUi(false);return}
+    if(WK.paused)return;
+    setTimeout(wkStart,Math.min(6000,300+WK.fails*600));
+  };
+  WK.rec=r;
+  try{r.start()}catch(e){WK.rec=null}
+}
+function wkOn(){
+  if(WK.want)return;
+  WK.want=true;WK.fails=0;WK.paused=false;
+  if(window.isSecureContext===false)note('Atenção: esta página não está em conexão segura ('+location.protocol+'//), então o Chrome costuma negar o microfone. Se não funcionar, hospede em https.',true);
+  else note('Escuta ligada. Diga "'+cfg.name+'" e a pergunta.');
+  wkStart();
+}
+function wkOff(){
+  WK.want=false;WK.paused=false;clearTimeout(WK.pt);
+  try{if(WK.rec)WK.rec.abort()}catch(e){}
+  setWakeUi(false);
+}
+$('#mic').addEventListener('click',function(){
+  WK.manual=true;
+  if(WK.want){wkOff();cfg.wake=false;$('#fWake').checked=false}
+  else{cfg.wake=true;$('#fWake').checked=true;wkOn()}
+  saveCfg();
+});
+document.addEventListener('pointerdown',function first(e){
+  if(WK.manual){document.removeEventListener('pointerdown',first);return}
+  if(e.target&&e.target.closest&&e.target.closest('#mic'))return;
+  document.removeEventListener('pointerdown',first);
+  if(cfg.wake&&!WK.want)wkOn();
+});
+
+/* ---------- avisos ---------- */
+var noteT=null;
+/* sticky=true: o aviso fica na tela até o motorista tocar em OK */
+function note(t,sticky){
+  var n=$('#notice');$('#noticeText').textContent=t;n.hidden=false;
+  clearTimeout(noteT);
+  if(!sticky)noteT=setTimeout(function(){n.hidden=true},12000);
+}
+$('#noticeClose').addEventListener('click',function(){clearTimeout(noteT);$('#notice').hidden=true});
+
+/* ---------- OBD2 via Bluetooth LE (ELM327) ---------- */
+var PIDS=[
+ ['0C',function(b){return(b[0]*256+b[1])/4},'rpm',2],
+ ['0D',function(b){return b[0]},'speed',1],
+ ['05',function(b){return b[0]-40},'cool',1],
+ ['42',function(b){return(b[0]*256+b[1])/1000},'volt',2],
+ ['2F',function(b){return b[0]*100/255},'fuel',1],
+ ['04',function(b){return b[0]*100/255},'load',1],
+ ['0F',function(b){return b[0]-40},'intake',1]
+];
+function parsePid(resp,pid){
+  var c=resp.replace(/[\s>]/g,'').toUpperCase(),i=c.indexOf('41'+pid);
+  if(i<0)return null;
+  var hex=c.slice(i+4),b=[];
+  for(var k=0;k+1<hex.length&&b.length<4;k+=2){var x=parseInt(hex.substr(k,2),16);if(isNaN(x))break;b.push(x)}
+  return b.length?b:null;
+}
+var OBD={on:false,dev:null,tx:null,buf:'',wait:null,enc:new TextEncoder(),dec:new TextDecoder()};
+OBD.write=async function(data){
+  var woResp=OBD.tx.properties.writeWithoutResponse;
+  for(var i=0;i<data.length;i+=20){
+    var part=data.slice(i,i+20);
+    if(woResp)await OBD.tx.writeValueWithoutResponse(part);else await OBD.tx.writeValue(part);
+  }
+};
+OBD.raw=function(cmd,ms){
+  return new Promise(function(res,rej){
+    var t=setTimeout(function(){OBD.wait=null;rej(new Error('timeout'))},ms||5000);
+    OBD.wait={res:res,t:t};OBD.buf='';
+    OBD.write(OBD.enc.encode(cmd+'\r')).catch(function(e){clearTimeout(t);OBD.wait=null;rej(e)});
+  });
+};
+OBD.q=Promise.resolve();
+OBD.send=function(cmd,ms){
+  var run=function(){return OBD.raw(cmd,ms)};
+  var p=OBD.q.then(run,run);
+  OBD.q=p.catch(function(){});
+  return p;
+};
+function onChunk(ev){
+  OBD.buf+=OBD.dec.decode(ev.target.value);
+  if(OBD.buf.indexOf('>')>=0&&OBD.wait){var w=OBD.wait;OBD.wait=null;clearTimeout(w.t);w.res(OBD.buf)}
+}
+function setSource(src){
+  G.source=src;
+  $('#src').dataset.state=src;
+  $('#srcText').textContent=src==='obd'?'OBD2 conectado':'Dados simulados';
+  $('#btnObd').textContent=src==='obd'?'Desconectar OBD2':'Conectar OBD2';
+  $('#simPanel').hidden=src==='obd';
+  $('#btnDtc').hidden=src!=='obd';
+  if(src!=='obd')$('#dtcBox').hidden=true;
+}
+function dropObd(msg){
+  OBD.on=false;
+  try{if(OBD.dev&&OBD.dev.gatt.connected)OBD.dev.gatt.disconnect()}catch(e){}
+  OBD.dev=null;OBD.tx=null;
+  setSource('sim');
+  if(msg)note(msg);
+}
+async function pollObd(){
+  var n=0;
+  while(OBD.on){
+    for(var i=0;i<PIDS.length;i++){
+      if(!OBD.on)return;
+      var p=PIDS[i],key=p[2];
+      if(n%6!==0&&key!=='rpm'&&key!=='speed'&&key!=='load')continue;
+      try{
+        var r=await OBD.send('01'+p[0]),b=parsePid(r,p[0]);
+        if(b&&b.length>=p[3])T[key]=p[1](b);
+      }catch(e){if(!OBD.on)return}
+    }
+    if(T.rpm!=null)T.engineOn=T.rpm>300;
+    n++;
+  }
+}
+async function connectObd(){
+  if(!navigator.bluetooth){
+    note('Este navegador não oferece Bluetooth para páginas web. Abra o app no Chrome do Android e use um adaptador ELM327 Bluetooth LE.');
+    return;
+  }
+  try{
+    var dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[0xfff0,0xffe0,0x18f0,'e7810a71-73ae-499d-8c15-faa9aef0c3f2']});
+    note('Conectando a '+(dev.name||'adaptador')+'…');
+    var srv=await dev.gatt.connect(),tx=null,rx=null,svcs=await srv.getPrimaryServices();
+    for(var i=0;i<svcs.length&&!(tx&&rx);i++){
+      var cs=await svcs[i].getCharacteristics();
+      for(var j=0;j<cs.length;j++){
+        var pr=cs[j].properties;
+        if(!rx&&pr.notify)rx=cs[j];
+        if(!tx&&(pr.write||pr.writeWithoutResponse))tx=cs[j];
+      }
+    }
+    if(!tx||!rx)throw new Error('canal serial não encontrado');
+    await rx.startNotifications();
+    rx.addEventListener('characteristicvaluechanged',onChunk);
+    OBD.dev=dev;OBD.tx=tx;OBD.on=true;
+    dev.addEventListener('gattserverdisconnected',function(){if(OBD.on)dropObd('O adaptador desconectou. Voltei para os dados simulados.')});
+    var init=['ATZ','ATE0','ATL0','ATS0','ATH0','ATSP0'];
+    for(var k=0;k<init.length;k++)await OBD.send(init[k],6000);
+    await OBD.send('0100',12000);
+    ['rpm','speed','cool','volt','fuel','load','intake'].forEach(function(k){T[k]=null});
+    T.engineOn=false;
+    setSource('obd');
+    note('Conectado. Ligue o carro e o '+cfg.name+' acorda.');
+    pollObd();
+    scanDtc(true);
+  }catch(e){
+    var m;
+    if(e&&e.name==='NotFoundError')m='Nenhum adaptador escolhido.';
+    else if(e&&(e.name==='SecurityError'||e.name==='NotAllowedError'))m='O Bluetooth está bloqueado nesta tela. Abra o arquivo direto no Chrome do Android ou da central.';
+    else m='Não consegui conectar ao adaptador ('+(e&&e.message?e.message:'erro')+'). Adaptadores Bluetooth clássico não funcionam em páginas web; é preciso um modelo Bluetooth LE.';
+    dropObd(m);
+  }
+}
+$('#btnObd').addEventListener('click',function(){
+  if(G.source==='obd')dropObd('OBD2 desconectado. Voltei para os dados simulados.');else connectObd();
+});
+
+/* ---------- scanner de falhas (códigos DTC do OBD2) ---------- */
+var DTC={list:[],pending:[],mil:null,count:null,at:null,busy:false,sig:null};
+var DTC_TXT={
+ P0016:['Sincronismo entre virabrequim e comando de válvulas fora do ponto','crit'],
+ P0101:['Medidor de fluxo de ar com leitura fora da faixa','warn'],
+ P0113:['Sensor de temperatura do ar de admissão com sinal alto','warn'],
+ P0117:['Sensor de temperatura do motor com sinal baixo','warn'],
+ P0118:['Sensor de temperatura do motor com sinal alto','warn'],
+ P0128:['Válvula termostática abrindo cedo, motor demora a esquentar','warn'],
+ P0130:['Sonda lambda antes do catalisador com defeito','warn'],
+ P0133:['Sonda lambda antes do catalisador lenta','warn'],
+ P0134:['Sonda lambda antes do catalisador sem sinal','warn'],
+ P0171:['Mistura pobre, ar demais ou combustível de menos','warn'],
+ P0172:['Mistura rica, combustível demais','warn'],
+ P0201:['Injetor do cilindro 1 com defeito','crit'],
+ P0202:['Injetor do cilindro 2 com defeito','crit'],
+ P0203:['Injetor do cilindro 3 com defeito','crit'],
+ P0204:['Injetor do cilindro 4 com defeito','crit'],
+ P0217:['Superaquecimento do motor','crit'],
+ P0234:['Pressão do turbo acima do esperado','warn'],
+ P0299:['Pressão do turbo abaixo do esperado','warn'],
+ P0300:['Falhas de ignição em vários cilindros','crit'],
+ P0301:['Falha de ignição no cilindro 1','crit'],
+ P0302:['Falha de ignição no cilindro 2','crit'],
+ P0303:['Falha de ignição no cilindro 3','crit'],
+ P0304:['Falha de ignição no cilindro 4','crit'],
+ P0325:['Sensor de detonação com defeito','warn'],
+ P0335:['Sensor de rotação do motor sem sinal','crit'],
+ P0340:['Sensor do comando de válvulas sem sinal','crit'],
+ P0420:['Catalisador com baixa eficiência','warn'],
+ P0442:['Pequeno vazamento no sistema de vapores, confira a tampa do tanque','warn'],
+ P0455:['Grande vazamento no sistema de vapores, confira a tampa do tanque','warn'],
+ P0500:['Sensor de velocidade do veículo com defeito','warn'],
+ P0562:['Tensão do sistema elétrico baixa','warn'],
+ P0563:['Tensão do sistema elétrico alta','warn'],
+ P0606:['Falha interna no módulo do motor','crit'],
+ P0700:['Falha informada pelo módulo da transmissão','warn']
+};
+function dtcInfo(c){
+  if(DTC_TXT[c])return{t:DTC_TXT[c][0],s:DTC_TXT[c][1]};
+  var L=c[0],g=c[1]==='0'||c[1]==='2';
+  var area={P:'motor ou transmissão',C:'chassi, freios ou suspensão',B:'carroceria ou conforto',U:'comunicação entre módulos'}[L];
+  return{t:(g?'Código genérico':'Código específico do fabricante')+' de '+area+'. Procure o significado exato pelo código.',s:L==='P'||L==='C'?'warn':'info'};
+}
+function hexBytes(resp){
+  var out=[];
+  String(resp).split(/[\r\n]+/).forEach(function(l){
+    l=l.replace(/>/g,'').trim();
+    if(!l||/SEARCHING|NO DATA|UNABLE|ERROR|STOPPED|BUS|\?/i.test(l))return;
+    l=l.replace(/^[0-9A-F]:/i,'').replace(/\s+/g,'');
+    if(!l||l.length%2||/[^0-9A-F]/i.test(l))return;
+    for(var i=0;i<l.length;i+=2)out.push(parseInt(l.substr(i,2),16));
+  });
+  return out;
+}
+function parseDtcs(resp,svc){
+  var b=hexBytes(resp),i=b.indexOf(svc);
+  if(i<0)return[];
+  b=b.slice(i+1);
+  if(b.length%2===1||(b.length&&b.length!==6)){var n=b[0];b=b.slice(1,1+2*n)}
+  var out=[];
+  for(var k=0;k+1<b.length;k+=2){
+    if(!b[k]&&!b[k+1])continue;
+    var c='PCBU'.charAt(b[k]>>6)+((b[k]>>4)&3)+(b[k]&15).toString(16).toUpperCase()+('0'+b[k+1].toString(16)).slice(-2).toUpperCase();
+    if(out.indexOf(c)<0)out.push(c);
+  }
+  return out;
+}
+function dtcRows(arr){
+  return arr.map(function(c){
+    var i=dtcInfo(c);
+    return'<li data-sev="'+i.s+'"><code>'+c+'</code><span>'+i.t+'</span><span class="sev">'+(i.s==='crit'?'Grave, evite forçar o motor':i.s==='warn'?'Atenção':'Informação')+'</span></li>';
+  }).join('');
+}
+function showDtc(){
+  var b=$('#dtcBox'),h='<h2>Falhas do carro</h2>';
+  var none=!DTC.list.length&&!DTC.pending.length;
+  if(none)h+='<p class="good">Nenhuma falha registrada'+(DTC.mil?', mas a luz de injeção está acesa. Vale passar num mecânico.':'.')+'</p>';
+  if(DTC.list.length)h+='<ul>'+dtcRows(DTC.list)+'</ul>';
+  if(DTC.pending.length)h+='<p class="sub">Pendentes, ainda não confirmadas:</p><ul>'+dtcRows(DTC.pending)+'</ul>';
+  h+='<p class="sub">Lido às '+DTC.at.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'. É um alerta, não um diagnóstico. Só o motor e o que o adaptador enxerga entram aqui; freios e airbag precisam de scanner próprio.</p>';
+  b.innerHTML=h;b.hidden=false;
+}
+function announceDtc(){
+  var d=cfg.driver,all=DTC.list,crit=all.some(function(c){return dtcInfo(c).s==='crit'});
+  var full,spoken;
+  if(!all.length&&!DTC.pending.length){
+    full=spoken='Varredura concluída, '+d+'. Nenhuma falha registrada'+(DTC.mil?', mas a luz de injeção está acesa, vale uma revisão.':'.');
+  }else{
+    var list=all.concat(DTC.pending);
+    var parts=list.slice(0,3).map(function(c){return dtcInfo(c).t});
+    spoken=(crit?'Atenção, '+d+'. ':d+', ')+'encontrei '+list.length+(list.length>1?' falhas':' falha')+': '+parts.join('; ')+'. '+(crit?'Evite forçar o motor e procure um mecânico.':'Vale levar a um mecânico em breve.');
+    full=spoken+' Códigos: '+list.join(', ')+'.';
+  }
+  addMsg('soul',full);history.push({w:'soul',t:full});speak(spoken);
+}
+async function scanDtc(auto){
+  if(G.source!=='obd'||DTC.busy)return;
+  DTC.busy=true;$('#btnDtc').disabled=true;
+  try{
+    var r1=await OBD.send('0101',8000),st=parsePid(r1,'01');
+    var r3=await OBD.send('03',10000),r7=await OBD.send('07',10000);
+    DTC.mil=st?!!(st[0]&0x80):null;DTC.count=st?(st[0]&0x7f):null;
+    DTC.list=parseDtcs(r3,0x43);
+    DTC.pending=parseDtcs(r7,0x47).filter(function(c){return DTC.list.indexOf(c)<0});
+    DTC.at=new Date();
+    var sig=DTC.list.concat(DTC.pending).join(',')+'|'+DTC.mil;
+    var changed=sig!==DTC.sig;DTC.sig=sig;
+    showDtc();
+    if(!auto||changed)announceDtc();
+  }catch(e){note('Não consegui ler as falhas agora. Ligue o carro e tente de novo.')}
+  DTC.busy=false;$('#btnDtc').disabled=false;
+}
+$('#btnDtc').addEventListener('click',function(){scanDtc(false)});
+setInterval(function(){if(G.source==='obd'&&T.engineOn)scanDtc(true)},300000);
+
+/* ---------- ajustes: ligação dos campos ---------- */
+function applyCfg(){
+  $('#carName').textContent=cfg.name;$('#nameTag').textContent=cfg.name;
+  document.title='Alma do Carro';
+  wakeHintText();
+}
+$('#fName').value=cfg.name;$('#fDriver').value=cfg.driver;$('#fTone').value=cfg.tone;
+$('#fPitch').value=cfg.pitch;$('#fRate').value=cfg.rate;
+$('#fEngine').value=cfg.engine;$('#fGvoice').value=cfg.gvoice;$('#fDeep').value=cfg.deep;$('#fRobot').checked=cfg.robot;
+$('#fEngine').addEventListener('change',function(e){cfg.engine=e.target.value;saveCfg()});
+$('#fGvoice').addEventListener('change',function(e){cfg.gvoice=e.target.value;saveCfg()});
+$('#fDeep').addEventListener('input',function(e){cfg.deep=parseFloat(e.target.value);saveCfg()});
+$('#fRobot').addEventListener('change',function(e){cfg.robot=e.target.checked;saveCfg()});
+$('#fKey').value=cfg.gkey;$('#fModel').value=cfg.gmodel;
+$('#fKey').addEventListener('input',function(e){cfg.gkey=e.target.value.trim();saveCfg();setHint()});
+$('#fModel').addEventListener('input',function(e){cfg.gmodel=e.target.value.trim()||DEF.gmodel;saveCfg();setHint()});
+$('#fVoice').checked=cfg.voice;$('#fAuto').checked=cfg.auto;$('#fWake').checked=cfg.wake;
+$('#fName').addEventListener('input',function(e){cfg.name=e.target.value.trim()||DEF.name;applyCfg();saveCfg()});
+$('#fDriver').addEventListener('input',function(e){cfg.driver=e.target.value.trim()||DEF.driver;saveCfg()});
+$('#fTone').addEventListener('change',function(e){cfg.tone=e.target.value;saveCfg()});
+$('#fPitch').addEventListener('input',function(e){cfg.pitch=parseFloat(e.target.value);saveCfg()});
+$('#fRate').addEventListener('input',function(e){cfg.rate=parseFloat(e.target.value);saveCfg()});
+$('#fVoice').addEventListener('change',function(e){cfg.voice=e.target.checked;saveCfg();if(!cfg.voice){try{speechSynthesis.cancel()}catch(x){}stopAudio();setSpeaking(false)}});
+$('#fAuto').addEventListener('change',function(e){cfg.auto=e.target.checked;saveCfg()});
+$('#fWake').addEventListener('change',function(e){
+  cfg.wake=e.target.checked;saveCfg();WK.manual=true;
+  if(cfg.wake)wkOn();else wkOff();
+});
+$('#btnTest').addEventListener('click',function(){
+  if(!cfg.voice)note('A opção "Falar em voz alta" está desligada em Ajustes.',true);
+  else if(cfg.engine==='gemini'&&!cfg.gkey)note('Cole a chave do Gemini em Ajustes. Sem ela, só toca a voz do aparelho.',true);
+  else if(cfg.engine==='gemini')note('Gerando a voz do Gemini, aguarde alguns segundos…');
+  speak(fmt('Sistemas online. Sou o {n}, e estou com você, {d}.'))});
+$('#btnSet').addEventListener('click',function(){
+  var s=$('#settings');s.hidden=!s.hidden;$('#btnSet').setAttribute('aria-expanded',s.hidden?'false':'true');
+});
+
+/* ---------- partida ---------- */
+(function(){var w=$('#wave'),h='';for(var i=0;i<16;i++)h+='<span style="--i:'+i+'"></span>';w.innerHTML=h})();
+applyCfg();setHint();
+addMsg('soul',cfg.tone==='imponente'
+  ?'Sistemas em espera. Dê a partida e eu desperto, '+cfg.driver+'.'
+  :'Tô dormindo aqui. Dá a partida que eu acordo, '+cfg.driver+'.');
+render();
+var lastT=performance.now();
+setInterval(function(){
+  var now=performance.now(),dt=Math.min(0.5,(now-lastT)/1000);lastT=now;
+  if(G.source==='sim')simStep(dt);
+  detect(dt);
+  render();
+},200);
+})();
+</script>
+
+</body></html>
